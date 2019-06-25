@@ -7,6 +7,12 @@ const User = require('../models/user');
 
 const router = express.Router();
 
+function generateToken(parmas = {}) {
+    return jwt.sign(parmas, authConfig.secret, {
+        expiresIn: 86400,
+    });
+}
+
 router.post('/register', async (req, res) => {
     const { email } = req.body;
 
@@ -18,7 +24,7 @@ router.post('/register', async (req, res) => {
 
         user.password = undefined;
 
-        return res.send({ user });
+        return res.send({ user, token: generateToken({ id: user._id }) });
     } catch (error) {
         res.status(400).send({ error });
     }
@@ -37,11 +43,7 @@ router.post('/authenticate', async (req, res) => {
 
         user.password = undefined;
 
-        const token = jwt.sign({ id: user._id }, authConfig.secret, {
-            expiresIn: 86400,
-        });
-
-        return res.send({ user, token });
+        return res.send({ user, token: generateToken({ id: user._id }) });
     } catch (error) {
         return res.status(400).send({ error });
     }
