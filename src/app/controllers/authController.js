@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const authConfig = require('../../config/auth');
+const crypto = require('crypto');
 
 const User = require('../models/user');
 
@@ -48,5 +49,33 @@ router.post('/authenticate', async (req, res) => {
         return res.status(400).send({ error });
     }
 });
+
+router.post('/forgot_password', async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const user = await User.findOne({ email });
+
+        if(!user)
+            return res.status(400).send({'massage': 'User not found'});
+
+        const token = crypto.randomBytes(20).toString('hex');
+
+        const now = new Date();
+        now.setHours(now.getHours() + 1);
+
+        await User.findByIdAndUpdate(user._id, {
+            '$set': {
+                passwordResetToken: token,
+                passwordResetExpires: now,
+            }
+        });
+
+        return res.send({ token, now });
+
+    } catch (error) {
+        return res.status(400).send({ error });
+    }
+})
 
 module.exports = app => app.use('/auth', router);
